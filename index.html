@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>doping</title>
+  <style>
+    .dot {
+      stroke: black;
+    }
+
+    .container {
+      position: relative;
+      text-align: center;
+      width: 800px;
+      margin: 0 auto;
+    }
+
+    #tooltip {
+      position: absolute;
+      left: 0;
+      right: 0;
+      opacity: 0;
+      padding: 1em;
+      border-radius: 1em;
+      background-color: lightskyblue;
+      z-index: 1000;
+    }
+
+    svg {
+      width: 800px;
+      margin: 0 auto;
+    }
+
+    #title h1,
+    h2 {
+      text-align: center;
+    }
+
+    #title h2 {
+      font-size: 1em;
+    }
+
+    #legend {
+      position: absolute;
+      width: 300px;
+      text-align: right;
+      top: 50%;
+      left: 100%;
+      transform: translateX(-350px);
+    }
+
+    #legend .doping {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background-color: orange;
+    }
+
+    #legend .no-doping {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background-color: steelblue;
+    }
+
+    circle {
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="title">
+      <h1>Doping in Professional Bicycle Racing</h1>
+      <h2>35 Fastest times up Alpe d'Huez</h2>
+    </div>
+
+  </div>
+</body>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+
+<script>
+  
+  fetch('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json')
+    .then(res => {
+      if (res.status == 200) {
+        return res.json()
+      } else {
+        throw new Error('server error')
+      }
+    })
+    .then(data => {
+      console.log(data)
+      main(data)
+    })
+
+  function main(data) {
+    let p = 50, w = 800 - 2 * p, h = 500 - 2 * p
+    let year = data.map(d => d.Year)
+    let minutes = data.map(d => d.Seconds)
+    let minT = d3.min(minutes)
+    let maxT = d3.max(minutes)
+    console.log(minT, maxT)
+    //获得最小和最大时间日期对象，我们只关心分和秒
+    let minDate = new Date()
+    minDate.setMinutes(Math.floor(minT / 60))
+    minDate.setSeconds(minT % 60)
+    let maxDate = new Date()
+    maxDate.setMinutes(Math.floor(maxT / 60))
+    maxDate.setSeconds(maxT % 60)
+    console.log(minDate, maxDate)
+
+    const xScale = d3.scaleLinear()
+      .domain([d3.min(year) - 1, d3.max(year) + 1])
+      .range([0, w])
+
+
+    const yScale = d3.scaleTime()
+      .domain([minDate, maxDate])
+      .range([0, h])
+
+    const tooltip = d3.select('.container').append('div')
+      .attr('id', 'tooltip')
+
+    let svg = d3.select('.container')
+      .append('svg')
+      .attr('width', w + 2 * p)
+      .attr('height', h + 2 * p)
+      .append('g')
+      .attr('width', w)
+      .attr('height', h)
+      .attr('transform', `translate(${p}, ${p})`)
+
+    //legend
+    let legend = d3.select('.container').append('div')
+      .attr('id', 'legend')
+    legend.html(`<p>
+    No doping allegations <span class='no-doping'> </span><br />
+    Riders with doping allegations <span class='doping'></span>
+    </p>`)
+
+    //定义x轴
+    var xAxis = d3.axisBottom(xScale)
+      .tickFormat(d3.format(""))
+    svg.append('g')
+      .attr('id', 'x-axis')
+      .attr('transform', `translate(0, ${h})`)
+      .call(xAxis)
+
+
+    //定义y轴
+    var yAxis = d3
+      .axisLeft(yScale)
+      //使用timeFormat函数来转换时间对象
+      .tickFormat(function (d) {
+        return d3.timeFormat("%M:%S")(d)
+      });
+    svg.append('g')
+      .attr('id', 'y-axis')
+      .call(yAxis)
+
+    //创建点
+    svg.selectAll('.dot')
+      .data(data)
+      .enter()
+      .append('circle')
+      .attr('class', 'dot')
+      .attr('cx', function (d, i) {
+        return xScale(d.Year)
+      })
+      .attr('data-xvalue', function (d, i) {
+        return d.Year
+      })
+      .attr('cy', function (d, i) {
+        let dd = new Date()
+        let mm = Math.floor(d.Seconds / 60)
+        let ss = d.Seconds % 60
+        dd.setMinutes(mm)
+        dd.setSeconds(ss)
+        return yScale(dd)
+      })
+      .attr('data-yvalue', function (d, i) {
+        let dd = new Date()
+        let mm = Math.floor(d.Seconds / 60)
+        let ss = d.Seconds % 60
+        dd.setMinutes(mm)
+        dd.setSeconds(ss)
+        return dd.toUTCString()
+      })
+      .attr('r', '10px')
+      .attr('fill', function (d, i) {
+        if (d.Doping === '') {
+          return 'steelblue'
+        } else {
+          return 'orange'
+        }
+      })
+      .on('mouseover', function (event, d) {
+        console.log(event)
+        let el = d3.select(this)
+        let x = el.attr('cx'), y = el.attr('cy')
+        let text = `
+      ${d.Name} ${d.Nationality}<br />
+      Year: ${d.Year}, time: ${d.Time}<br/>
+      `
+        if (d.Doping) {
+          text += `<br />
+        ${d.Doping}
+        `
+        }
+
+        tooltip
+          .attr('data-year', el.attr('data-xvalue'))
+          .html(text)
+          .style('opacity', 1)
+          .style('left', (event.offsetX + 30) + 'px')
+          .style('top', event.offsetY + 'px')
+        console.log(tooltip.style('left'),
+          tooltip.style('top'))
+      })
+      .on('mouseout', function (event, d) {
+        console.log(event)
+        tooltip
+          .style('opacity', 0)
+      })
+  }
+
+
+</script>
+
+</html>
