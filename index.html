@@ -26,12 +26,13 @@
       padding: 1em;
       border-radius: 1em;
       background-color: lightskyblue;
-      z-index: 1000;
+      z-index: 1;
     }
 
     svg {
       width: 800px;
       margin: 0 auto;
+      position: relative;
     }
 
     #title h1,
@@ -68,6 +69,7 @@
 
     circle {
       cursor: pointer;
+      z-index: 1;
     }
   </style>
 </head>
@@ -127,10 +129,12 @@
     const tooltip = d3.select('.container').append('div')
       .attr('id', 'tooltip')
 
-    let svg = d3.select('.container')
+    let svgParent = d3.select('.container')
       .append('svg')
       .attr('width', w + 2 * p)
       .attr('height', h + 2 * p)
+
+    let svg = svgParent
       .append('g')
       .attr('width', w)
       .attr('height', h)
@@ -201,7 +205,7 @@
         }
       })
       .on('mouseover', function (event, d) {
-        console.log(event)
+        console.log(event.type)
         let el = d3.select(this)
         let x = el.attr('cx'), y = el.attr('cy')
         let text = `
@@ -213,7 +217,7 @@
         ${d.Doping}
         `
         }
-
+        svgParent.style('z-index', 0)
         tooltip
           .attr('data-year', el.attr('data-xvalue'))
           .html(text)
@@ -224,7 +228,8 @@
           tooltip.style('top'))
       })
       .on('mouseout', function (event, d) {
-        console.log(event)
+        console.log(event.type)
+        svgParent.style('z-index', 2)
         tooltip
           .style('opacity', 0)
       })
