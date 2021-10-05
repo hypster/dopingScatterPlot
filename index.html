@@ -20,8 +20,10 @@
 
     #tooltip {
       position: absolute;
+      display: inline-block;
       left: 0;
-      right: 0;
+      top: 0;
+      width: fit-content;
       opacity: 0;
       padding: 1em;
       border-radius: 1em;
@@ -208,9 +210,8 @@
         console.log(event.type)
         let el = d3.select(this)
         let x = el.attr('cx'), y = el.attr('cy')
-        let text = `
-      ${d.Name} ${d.Nationality}<br />
-      Year: ${d.Year}, time: ${d.Time}<br/>
+        let text = `${d.Name} ${d.Nationality}<br />
+      Year: ${d.Year}, time: ${d.Time}<br />
       `
         if (d.Doping) {
           text += `<br />
@@ -223,7 +224,7 @@
           .html(text)
           .style('opacity', 1)
           .style('left', (event.offsetX + 30) + 'px')
-          .style('top', event.offsetY + 'px')
+          .style('top', (event.offsetY  + p) + 'px')
         console.log(tooltip.style('left'),
           tooltip.style('top'))
       })
